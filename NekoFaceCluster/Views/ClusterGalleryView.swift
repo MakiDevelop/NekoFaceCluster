@@ -145,8 +145,8 @@ struct PersonCard: View {
                         .padding(8)
                 }
 
-                // Hover 時顯示移除整個分群按鈕
-                if isHovered && isReviewing {
+                // 審核模式：圖片右上角常駐顯示移除按鈕
+                if isReviewing {
                     Button(action: onRemoveCluster) {
                         Image(systemName: "trash.circle.fill")
                             .font(.title2)
@@ -156,7 +156,6 @@ struct PersonCard: View {
                     }
                     .buttonStyle(.plain)
                     .padding(6)
-                    .transition(.opacity)
                 }
             }
             .onTapGesture { onTap() }
