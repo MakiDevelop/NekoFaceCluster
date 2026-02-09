@@ -36,6 +36,7 @@ struct ClusterGalleryView: View {
                         onCommitName: { commitName(for: cluster.id) },
                         onRemoveCluster: { state.removeCluster(id: cluster.id) }
                     )
+                    .zIndex(hoveredId == cluster.id ? 1 : 0)
                     .onHover { hovering in hoveredId = hovering ? cluster.id : nil }
                 }
 
