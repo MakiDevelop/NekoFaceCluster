@@ -41,7 +41,11 @@ struct ClusterGalleryView: View {
                 }
 
                 if !state.noisePaths.isEmpty {
-                    UncategorizedCard(count: state.noisePaths.count)
+                    UncategorizedCard(
+                        count: state.noisePaths.count,
+                        isReviewing: state.isReviewing,
+                        onClear: { state.noisePaths.removeAll() }
+                    )
                 }
             }
             .padding()
@@ -195,23 +199,39 @@ struct PersonCard: View {
 
 struct UncategorizedCard: View {
     let count: Int
+    let isReviewing: Bool
+    let onClear: () -> Void
     @State private var isHovered = false
 
     var body: some View {
         VStack(spacing: 0) {
-            Rectangle()
-                .fill(.quaternary)
-                .frame(height: 200)
-                .overlay {
-                    VStack(spacing: 8) {
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 40))
-                            .foregroundStyle(.orange)
-                        Text("\(count) 張")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            ZStack(alignment: .topTrailing) {
+                Rectangle()
+                    .fill(.quaternary)
+                    .frame(height: 200)
+                    .overlay {
+                        VStack(spacing: 8) {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.orange)
+                            Text("\(count) 張")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+
+                if isReviewing {
+                    Button(action: onClear) {
+                        Image(systemName: "trash.circle.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .red)
+                            .shadow(radius: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(6)
                 }
+            }
 
             HStack {
                 Text("未分類")
