@@ -121,10 +121,13 @@ struct PersonCard: View {
                 ZStack(alignment: .bottomTrailing) {
                     if let thumbPath = cluster.thumbnailPath,
                        let nsImage = NSImage(contentsOfFile: thumbPath) {
-                        Image(nsImage: nsImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
+                        Color.clear
                             .frame(height: 200)
+                            .overlay {
+                                Image(nsImage: nsImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            }
                             .clipped()
                     } else {
                         Rectangle()
