@@ -5,8 +5,18 @@ actor ClusteringService {
     private let embedder: FaceEmbedder
     private let dbscan: DBSCAN
 
-    init(embedder: FaceEmbedder = VisionEmbedder(), eps: Float = 0.45, minSamples: Int = 3) {
-        self.embedder = embedder
+    init(embedder: FaceEmbedder? = nil, eps: Float = 0.45, minSamples: Int = 3) {
+        // 優先使用 CoreML ArcFace，fallback 到 Vision FeaturePrint
+        if let embedder {
+            self.embedder = embedder
+        } else {
+            do {
+                self.embedder = try CoreMLFaceEmbedder()
+            } catch {
+                print("CoreML 模型載入失敗，fallback 到 VisionEmbedder: \(error)")
+                self.embedder = VisionEmbedder()
+            }
+        }
         self.dbscan = DBSCAN(eps: eps, minSamples: minSamples)
     }
 

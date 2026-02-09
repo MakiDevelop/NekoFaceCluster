@@ -3,8 +3,9 @@ import Foundation
 /// 將分群結果整理到輸出目錄
 struct FileOrganizer {
     enum Mode {
-        case symlink
+        case move
         case copy
+        case symlink
     }
 
     static func organize(
@@ -26,10 +27,12 @@ struct FileOrganizer {
                 if fm.fileExists(atPath: dstURL.path) { continue }
 
                 switch mode {
-                case .symlink:
-                    try fm.createSymbolicLink(at: dstURL, withDestinationURL: srcURL)
+                case .move:
+                    try fm.moveItem(at: srcURL, to: dstURL)
                 case .copy:
                     try fm.copyItem(at: srcURL, to: dstURL)
+                case .symlink:
+                    try fm.createSymbolicLink(at: dstURL, withDestinationURL: srcURL)
                 }
             }
         }
@@ -44,10 +47,12 @@ struct FileOrganizer {
                 if fm.fileExists(atPath: dstURL.path) { continue }
 
                 switch mode {
-                case .symlink:
-                    try fm.createSymbolicLink(at: dstURL, withDestinationURL: srcURL)
+                case .move:
+                    try fm.moveItem(at: srcURL, to: dstURL)
                 case .copy:
                     try fm.copyItem(at: srcURL, to: dstURL)
+                case .symlink:
+                    try fm.createSymbolicLink(at: dstURL, withDestinationURL: srcURL)
                 }
             }
         }

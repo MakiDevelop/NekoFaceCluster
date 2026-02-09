@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2482D0A9D549C465F426C62C /* w600k_r50.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */; };
 		3B9A76A9C168D2716E503515 /* VisionEmbedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D085252A455496572335192 /* VisionEmbedder.swift */; };
 		4F3669487319D120AFCF83E2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFC70F41E45D18234B54579 /* ContentView.swift */; };
 		594774F6F621EBBC85B0444D /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABBE1A609E5BD1B57A622552 /* ProcessingView.swift */; };
@@ -18,6 +19,7 @@
 		B9951AEF159EC0CE50E5538A /* NekoFaceClusterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B977F71C5B0E97F14F61DE5F /* NekoFaceClusterApp.swift */; };
 		BF65B4F57C861FF6F76E177C /* FileOrganizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373E3D8C5A696825E1B0D8A2 /* FileOrganizer.swift */; };
 		E389C4A3230C43449A630E2A /* DBSCAN.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97CEC855BAF187C6AC429039 /* DBSCAN.swift */; };
+		F9945D4CD9291D63C45E29C4 /* CoreMLFaceEmbedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCD6C9E275B3D9DE7416120 /* CoreMLFaceEmbedder.swift */; };
 		FC8A01C2C871F7A8D25BA1F8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA995F48EFAAA713A1E602 /* WelcomeView.swift */; };
 /* End PBXBuildFile section */
 
@@ -33,9 +35,11 @@
 		89AFB01A5CE57C490D20156E /* ClusterGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterGalleryView.swift; sourceTree = "<group>"; };
 		97CEC855BAF187C6AC429039 /* DBSCAN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSCAN.swift; sourceTree = "<group>"; };
 		ABBE1A609E5BD1B57A622552 /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
+		B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */ = {isa = PBXFileReference; path = w600k_r50.mlpackage; sourceTree = "<group>"; };
 		B404028449B64DAF7A2D5628 /* ImageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageScanner.swift; sourceTree = "<group>"; };
 		B977F71C5B0E97F14F61DE5F /* NekoFaceClusterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NekoFaceClusterApp.swift; sourceTree = "<group>"; };
 		BB269576D66C2A350BA0F1E3 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		FDCD6C9E275B3D9DE7416120 /* CoreMLFaceEmbedder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLFaceEmbedder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -62,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				BB269576D66C2A350BA0F1E3 /* AppState.swift */,
+				FDCD6C9E275B3D9DE7416120 /* CoreMLFaceEmbedder.swift */,
 				97CEC855BAF187C6AC429039 /* DBSCAN.swift */,
 				847D876C60FFAF99D04D576C /* FaceEmbedder.swift */,
 				7D085252A455496572335192 /* VisionEmbedder.swift */,
@@ -74,6 +79,7 @@
 			children = (
 				0199A1508413F0CB1C7E2250 /* NekoFaceCluster.entitlements */,
 				B977F71C5B0E97F14F61DE5F /* NekoFaceClusterApp.swift */,
+				B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */,
 				40EABAD67C7514FDDD49945F /* Models */,
 				F6389D6E0A58AC062DBE00C7 /* Services */,
 				3FD04C0ABA099243EBB6E7A3 /* Views */,
@@ -156,6 +162,7 @@
 				B0C398C02C6FA32043F2EB8C /* ClusterGalleryView.swift in Sources */,
 				A8A654D7229865F145B7ED57 /* ClusteringService.swift in Sources */,
 				4F3669487319D120AFCF83E2 /* ContentView.swift in Sources */,
+				F9945D4CD9291D63C45E29C4 /* CoreMLFaceEmbedder.swift in Sources */,
 				E389C4A3230C43449A630E2A /* DBSCAN.swift in Sources */,
 				9474CE451AD7ACB4C2994F90 /* FaceEmbedder.swift in Sources */,
 				BF65B4F57C861FF6F76E177C /* FileOrganizer.swift in Sources */,
@@ -164,6 +171,7 @@
 				594774F6F621EBBC85B0444D /* ProcessingView.swift in Sources */,
 				3B9A76A9C168D2716E503515 /* VisionEmbedder.swift in Sources */,
 				FC8A01C2C871F7A8D25BA1F8 /* WelcomeView.swift in Sources */,
+				2482D0A9D549C465F426C62C /* w600k_r50.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

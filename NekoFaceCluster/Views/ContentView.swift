@@ -8,7 +8,7 @@ struct ContentView: View {
             SidebarView()
                 .navigationSplitViewColumnWidth(min: 280, ideal: 320)
         } detail: {
-            if state.clusters.isEmpty && !state.isProcessing {
+            if state.clusters.isEmpty && !state.isProcessing && !state.isReviewing {
                 WelcomeView()
             } else if state.isProcessing {
                 ProcessingView()
@@ -26,91 +26,146 @@ struct SidebarView: View {
     @EnvironmentObject var state: AppState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // 輸入目錄
-            GroupBox("Input") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Button("Select Folder...") { pickInputFolder() }
-                        .disabled(state.isProcessing)
-                    if let dir = state.inputDirectory {
-                        Text(dir.lastPathComponent)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                // 資料夾選擇
+                FolderSection(
+                    title: "輸入資料夾",
+                    icon: "folder.fill",
+                    color: .blue,
+                    url: state.inputDirectory,
+                    disabled: state.isProcessing || state.isReviewing,
+                    action: pickInputFolder
+                )
 
-            // 輸出目錄
-            GroupBox("Output") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Button("Select Output Folder...") { pickOutputFolder() }
-                        .disabled(state.isProcessing)
-                    if let dir = state.outputDirectory {
-                        Text(dir.lastPathComponent)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+                FolderSection(
+                    title: "輸出資料夾",
+                    icon: "folder.badge.plus",
+                    color: .green,
+                    url: state.outputDirectory,
+                    disabled: state.isProcessing || state.isReviewing,
+                    action: pickOutputFolder
+                )
 
-            // 參數
-            GroupBox("Settings") {
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading) {
-                        Text("Sensitivity (eps): \(state.eps, specifier: "%.2f")")
+                Divider()
+
+                // 參數
+                VStack(alignment: .leading, spacing: 14) {
+                    Label("設定", systemImage: "slider.horizontal.3")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("配對門檻 (eps: \(state.eps, specifier: "%.2f"))")
                             .font(.caption)
                         Slider(value: $state.eps, in: 0.2...0.8, step: 0.05)
+                            .disabled(state.isReviewing)
+                        HStack {
+                            Text("嚴格").font(.caption2).foregroundStyle(.secondary)
+                            Spacer()
+                            Text("寬鬆").font(.caption2).foregroundStyle(.secondary)
+                        }
                     }
 
-                    VStack(alignment: .leading) {
-                        Text("Min Samples: \(state.minSamples)")
+                    HStack {
+                        Text("最少樣本數")
                             .font(.caption)
-                        Stepper("\(state.minSamples)", value: $state.minSamples, in: 2...10)
+                        Spacer()
+                        Stepper("\(state.minSamples)", value: $state.minSamples, in: 1...10)
+                            .fixedSize()
+                            .disabled(state.isReviewing)
                     }
 
-                    Picker("File Mode", selection: $state.fileMode) {
+                    Picker(selection: $state.fileMode) {
                         ForEach(AppState.FileMode.allCases) { mode in
                             Text(mode.rawValue).tag(mode)
                         }
+                    } label: {
+                        Text("輸出模式")
+                            .font(.caption)
                     }
                     .pickerStyle(.segmented)
                 }
-            }
 
-            // 開始按鈕
-            Button(action: startProcessing) {
-                Label("Start Clustering", systemImage: "person.3.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(state.inputDirectory == nil || state.outputDirectory == nil || state.isProcessing)
+                Divider()
 
-            // 統計
-            if state.phase == .done {
-                GroupBox("Results") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        StatRow(label: "Persons found", value: "\(state.clusters.count)")
-                        StatRow(label: "Total images", value: "\(state.totalImages)")
-                        StatRow(label: "Total faces", value: "\(state.totalFaces)")
-                        StatRow(label: "No face", value: "\(state.noFaceImages)")
-                        StatRow(label: "Errors", value: "\(state.errorImages)")
-                        StatRow(label: "Uncategorized", value: "\(state.noisePaths.count)")
+                // 按鈕區
+                if state.isReviewing {
+                    // 審核模式：確認整理 + 重新分群
+                    VStack(spacing: 8) {
+                        Button(action: confirmOrganize) {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text("確認整理")
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                        .controlSize(.large)
+
+                        Button(action: { state.reset() }) {
+                            HStack {
+                                Image(systemName: "arrow.counterclockwise")
+                                Text("重新開始")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
                     }
+
+                    // 審核中的統計
+                    ResultsSection()
+
+                } else if state.phase == .done {
+                    // 完成
+                    Label(state.statusMessage, systemImage: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+                    Button(action: { state.reset() }) {
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("重新開始")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+
+                } else {
+                    // 開始按鈕
+                    Button(action: startProcessing) {
+                        HStack {
+                            Image(systemName: state.isProcessing ? "gearshape.2.fill" : "play.fill")
+                                .symbolEffect(.pulse, isActive: state.isProcessing)
+                            Text(state.isProcessing ? "處理中..." : "開始分群")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(state.inputDirectory == nil || state.outputDirectory == nil || state.isProcessing)
+                }
+
+                // 錯誤訊息
+                if state.phase == .error, !state.statusMessage.isEmpty {
+                    Label(state.statusMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                 }
             }
-
-            Spacer()
-
-            Text(state.phase.rawValue)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            .padding()
         }
-        .padding()
     }
 
     private func pickInputFolder() {
@@ -118,7 +173,7 @@ struct SidebarView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.message = "Select the folder containing images to sort"
+        panel.message = "選擇包含圖片的資料夾"
         if panel.runModal() == .OK {
             state.inputDirectory = panel.url
         }
@@ -129,12 +184,13 @@ struct SidebarView: View {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.message = "Select output folder for sorted images"
+        panel.message = "選擇分群結果的輸出位置"
         if panel.runModal() == .OK {
             state.outputDirectory = panel.url
         }
     }
 
+    /// 分群完停在 reviewing，不搬檔案
     private func startProcessing() {
         guard let inputDir = state.inputDirectory,
               let outputDir = state.outputDirectory else { return }
@@ -145,18 +201,16 @@ struct SidebarView: View {
 
         Task { @MainActor in
             do {
-                // Phase 1: Scan
                 state.phase = .scanning
                 let imageURLs = ImageScanner.scan(directory: inputDir)
                 state.totalImages = imageURLs.count
 
                 guard !imageURLs.isEmpty else {
-                    state.statusMessage = "No images found"
+                    state.statusMessage = "資料夾中沒有找到圖片"
                     state.phase = .error
                     return
                 }
 
-                // Phase 2: Embed
                 state.phase = .embedding
                 let service = ClusteringService(
                     eps: Float(state.eps),
@@ -169,26 +223,44 @@ struct SidebarView: View {
                     state.currentFile = file
                 }
 
-                // Phase 3: Update results
-                state.phase = .clustering
                 state.clusters = result.clusters
                 state.noisePaths = result.noisePaths
                 state.totalFaces = result.totalFaces
                 state.noFaceImages = result.noFaceCount
                 state.errorImages = result.errorCount
 
-                // Phase 4: Organize files
+                // 停在審核階段，讓用戶命名、移除後再整理
+                state.phase = .reviewing
+                state.statusMessage = "分群完成，請審核後點「確認整理」"
+
+            } catch {
+                state.phase = .error
+                state.statusMessage = error.localizedDescription
+            }
+        }
+    }
+
+    /// 用戶確認後才搬檔案
+    private func confirmOrganize() {
+        guard let outputDir = state.outputDirectory else { return }
+
+        Task { @MainActor in
+            do {
                 state.phase = .organizing
-                let mode: FileOrganizer.Mode = state.fileMode == .symlink ? .symlink : .copy
+                let mode: FileOrganizer.Mode
+                switch state.fileMode {
+                case .move: mode = .move
+                case .copy: mode = .copy
+                case .symlink: mode = .symlink
+                }
                 try FileOrganizer.organize(
-                    clusters: result.clusters,
-                    noisePaths: result.noisePaths,
+                    clusters: state.clusters,
+                    noisePaths: state.noisePaths,
                     to: outputDir,
                     mode: mode
                 )
-
                 state.phase = .done
-                state.statusMessage = "完成！找到 \(result.clusters.count) 個人。"
+                state.statusMessage = "整理完成！\(state.clusters.count) 個人物已輸出。"
             } catch {
                 state.phase = .error
                 state.statusMessage = error.localizedDescription
@@ -197,18 +269,88 @@ struct SidebarView: View {
     }
 }
 
+// MARK: - Sidebar Components
+
+struct FolderSection: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let url: URL?
+    let disabled: Bool
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: icon)
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+
+            Button(action: action) {
+                HStack {
+                    if let url {
+                        Image(systemName: "folder.fill")
+                            .foregroundStyle(color)
+                        Text(url.lastPathComponent)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundStyle(color)
+                        Text("選擇資料夾...")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                }
+                .padding(8)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .disabled(disabled)
+        }
+    }
+}
+
+struct ResultsSection: View {
+    @EnvironmentObject var state: AppState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("分群統計", systemImage: "chart.bar.fill")
+                .font(.caption.bold())
+                .foregroundStyle(.blue)
+
+            VStack(spacing: 4) {
+                StatRow(label: "人物數", value: "\(state.clusters.count)", color: .blue)
+                StatRow(label: "圖片總數", value: "\(state.totalImages)", color: .primary)
+                StatRow(label: "偵測人臉", value: "\(state.totalFaces)", color: .purple)
+                StatRow(label: "無人臉", value: "\(state.noFaceImages)", color: .orange)
+                StatRow(label: "錯誤", value: "\(state.errorImages)", color: .red)
+                StatRow(label: "未分類", value: "\(state.noisePaths.count)", color: .secondary)
+            }
+            .padding(10)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+}
+
 struct StatRow: View {
     let label: String
     let value: String
+    var color: Color = .primary
 
     var body: some View {
         HStack {
             Text(label)
+                .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
             Text(value)
-                .fontWeight(.medium)
+                .font(.caption.monospacedDigit().bold())
+                .foregroundStyle(color)
         }
-        .font(.caption)
     }
 }

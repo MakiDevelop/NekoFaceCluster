@@ -14,6 +14,7 @@ enum ProcessingPhase: String {
     case scanning = "掃描圖片中..."
     case embedding = "辨識人臉中..."
     case clustering = "分群中..."
+    case reviewing = "審核分群結果"
     case organizing = "整理檔案中..."
     case done = "完成"
     case error = "發生錯誤"
@@ -39,17 +40,49 @@ class AppState: ObservableObject {
     @Published var noisePaths: [String] = []
 
     @Published var eps: Double = 0.45
-    @Published var minSamples: Int = 3
-    @Published var fileMode: FileMode = .symlink
+    @Published var minSamples: Int = 2
+    @Published var fileMode: FileMode = .move
 
     enum FileMode: String, CaseIterable, Identifiable {
-        case symlink = "Symlink"
+        case move = "移動"
         case copy = "複製"
+        case symlink = "Symlink"
         var id: String { rawValue }
     }
 
     var isProcessing: Bool {
-        phase != .idle && phase != .done && phase != .error
+        switch phase {
+        case .scanning, .embedding, .clustering, .organizing: return true
+        default: return false
+        }
+    }
+
+    /// 是否在審核階段（可編輯分群）
+    var isReviewing: Bool { phase == .reviewing }
+
+    func renameCluster(id: Int, to newName: String) {
+        if let index = clusters.firstIndex(where: { $0.id == id }) {
+            clusters[index].name = newName
+        }
+    }
+
+    /// 從分群中移除圖片，放回未分類
+    func removeImage(_ path: String, fromCluster clusterId: Int) {
+        if let index = clusters.firstIndex(where: { $0.id == clusterId }) {
+            clusters[index].imagePaths.removeAll { $0 == path }
+            noisePaths.append(path)
+            if clusters[index].imagePaths.isEmpty {
+                clusters.remove(at: index)
+            }
+        }
+    }
+
+    /// 移除整個分群，所有圖片放回未分類
+    func removeCluster(id: Int) {
+        if let index = clusters.firstIndex(where: { $0.id == id }) {
+            noisePaths.append(contentsOf: clusters[index].imagePaths)
+            clusters.remove(at: index)
+        }
     }
 
     func reset() {

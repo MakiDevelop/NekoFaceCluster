@@ -9,20 +9,15 @@ struct ImageScanner {
 
     static func scan(directory: URL) -> [URL] {
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(
+        guard let contents = try? fm.contentsOfDirectory(
             at: directory,
             includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            options: [.skipsHiddenFiles]
         ) else { return [] }
 
-        var results: [URL] = []
-        for case let fileURL as URL in enumerator {
-            let ext = fileURL.pathExtension.lowercased()
-            if supportedExtensions.contains(ext) {
-                results.append(fileURL)
-            }
-        }
-        return results.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return contents
+            .filter { supportedExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     static func loadCGImage(from url: URL) -> CGImage? {
