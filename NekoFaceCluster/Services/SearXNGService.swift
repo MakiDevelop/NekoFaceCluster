@@ -113,7 +113,7 @@ actor ReverseImageSearchService {
     // MARK: - 圖片上傳
 
     private func uploadToTemp(jpegData: Data) async throws -> URL {
-        guard let uploadURL = URL(string: "https://0x0.st") else {
+        guard let uploadURL = URL(string: "https://litterbox.catbox.moe/resources/internals/api.php") else {
             throw SearchError.uploadFailed("無效的上傳 URL")
         }
 
@@ -123,12 +123,20 @@ actor ReverseImageSearchService {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
+        // reqtype
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"face.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"reqtype\"\r\n\r\n".data(using: .utf8)!)
+        body.append("fileupload".data(using: .utf8)!)
+        // time (1h 足夠搜尋用)
+        body.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"time\"\r\n\r\n".data(using: .utf8)!)
+        body.append("1h".data(using: .utf8)!)
+        // file
+        body.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"fileToUpload\"; filename=\"face.jpg\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         body.append(jpegData)
         body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
 
         let (data, response): (Data, URLResponse)
         do {
