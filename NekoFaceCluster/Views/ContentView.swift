@@ -85,6 +85,20 @@ struct SidebarView: View {
                             .font(.caption)
                     }
                     .pickerStyle(.segmented)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("SearXNG", systemImage: "magnifyingglass")
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+
+                        TextField("URL", text: $state.searxngBaseURL)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.caption)
+
+                        Text("反向圖搜辨識人名")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
 
                 Divider()
@@ -217,10 +231,13 @@ struct SidebarView: View {
                     minSamples: state.minSamples
                 )
 
-                let result = try await service.process(imageURLs: imageURLs) { processed, total, file in
-                    state.processedImages = processed
-                    state.progress = Double(processed) / Double(total)
-                    state.currentFile = file
+                let result = try await service.process(imageURLs: imageURLs) { info in
+                    state.processedImages = info.processed
+                    state.progress = Double(info.processed) / Double(info.total)
+                    state.currentFile = info.file
+                    state.totalFaces = info.totalFaces
+                    state.noFaceImages = info.noFaceCount
+                    state.errorImages = info.errorCount
                 }
 
                 state.clusters = result.clusters
@@ -259,6 +276,17 @@ struct SidebarView: View {
                     to: outputDir,
                     mode: mode
                 )
+
+                // 更新路徑指向輸出位置，避免移動後縮圖失效
+                for i in state.clusters.indices {
+                    let personDir = outputDir.appendingPathComponent(state.clusters[i].name)
+                    state.clusters[i].imagePaths = state.clusters[i].imagePaths.map { path in
+                        personDir.appendingPathComponent(
+                            URL(fileURLWithPath: path).lastPathComponent
+                        ).path
+                    }
+                }
+
                 state.phase = .done
                 state.statusMessage = "整理完成！\(state.clusters.count) 個人物已輸出。"
             } catch {

@@ -34,7 +34,8 @@ struct ClusterGalleryView: View {
                         onTap: { selectedCluster = cluster },
                         onDoubleTap: { startEditing(cluster) },
                         onCommitName: { commitName(for: cluster.id) },
-                        onRemoveCluster: { state.removeCluster(id: cluster.id) }
+                        onRemoveCluster: { state.removeCluster(id: cluster.id) },
+                        onSearch: { state.startSearch(for: cluster.id) }
                     )
                     .zIndex(hoveredId == cluster.id ? 1 : 0)
                     .onHover { hovering in hoveredId = hovering ? cluster.id : nil }
@@ -50,23 +51,19 @@ struct ClusterGalleryView: View {
             }
             .padding()
         }
-        .sheet(item: $selectedCluster) { cluster in
-            PersonDetailView(
-                cluster: cluster,
-                onRename: { newName in
-                    state.renameCluster(id: cluster.id, to: newName)
-                },
-                onRemoveImage: { path in
-                    state.removeImage(path, fromCluster: cluster.id)
-                    // 更新 sheet 中的 cluster 資料
-                    if let updated = state.clusters.first(where: { $0.id == cluster.id }) {
-                        selectedCluster = updated
-                    } else {
-                        selectedCluster = nil  // 群組被清空了
-                    }
-                }
-            )
-            .frame(minWidth: 700, minHeight: 500)
+        .sheet(item: $selectedCluster) { (initial: PersonCluster) in
+            PersonDetailView(clusterId: initial.id)
+                .environmentObject(state)
+                .frame(minWidth: 700, minHeight: 500)
+        }
+        .sheet(isPresented: Binding(
+            get: { state.searchingClusterId != nil },
+            set: { if !$0 { state.dismissSearch() } }
+        )) {
+            if let clusterId = state.searchingClusterId {
+                SearchResultsView(clusterId: clusterId)
+                    .environmentObject(state)
+            }
         }
     }
 
@@ -118,6 +115,7 @@ struct PersonCard: View {
     let onDoubleTap: () -> Void
     let onCommitName: () -> Void
     let onRemoveCluster: () -> Void
+    let onSearch: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -178,6 +176,13 @@ struct PersonCard: View {
                         .font(.subheadline.weight(.semibold))
                         .onTapGesture(count: 2) { onDoubleTap() }
                     Spacer()
+                    if isReviewing {
+                        Image(systemName: "magnifyingglass")
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                            .onTapGesture { onSearch() }
+                            .help("以圖搜人")
+                    }
                     Image(systemName: "pencil")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -254,9 +259,8 @@ struct UncategorizedCard: View {
 // MARK: - Person Detail
 
 struct PersonDetailView: View {
-    let cluster: PersonCluster
-    var onRename: (String) -> Void
-    var onRemoveImage: (String) -> Void
+    let clusterId: Int
+    @EnvironmentObject var state: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var editedName: String = ""
     @State private var isEditingName = false
@@ -265,68 +269,87 @@ struct PersonDetailView: View {
 
     let columns = [GridItem(.adaptive(minimum: 140), spacing: 8)]
 
+    private var cluster: PersonCluster? {
+        state.clusters.first { $0.id == clusterId }
+    }
+
     var body: some View {
         ZStack {
-            // 主內容
-            VStack(spacing: 0) {
-                // 標題列
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if isEditingName {
-                            TextField("名稱", text: $editedName, onCommit: {
-                                let trimmed = editedName.trimmingCharacters(in: .whitespaces)
-                                if !trimmed.isEmpty { onRename(trimmed) }
-                                isEditingName = false
-                            })
-                            .textFieldStyle(.plain)
-                            .font(.title2.bold())
-                        } else {
-                            HStack(spacing: 8) {
-                                Text(cluster.name)
-                                    .font(.title2.bold())
-                                Button { startEditing() } label: {
-                                    Image(systemName: "pencil.circle")
-                                        .foregroundStyle(.secondary)
+            if let cluster {
+                // 主內容
+                VStack(spacing: 0) {
+                    // 標題列
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            if isEditingName {
+                                TextField("名稱", text: $editedName, onCommit: {
+                                    let trimmed = editedName.trimmingCharacters(in: .whitespaces)
+                                    if !trimmed.isEmpty { state.renameCluster(id: clusterId, to: trimmed) }
+                                    isEditingName = false
+                                })
+                                .textFieldStyle(.plain)
+                                .font(.title2.bold())
+                            } else {
+                                HStack(spacing: 8) {
+                                    Text(cluster.name)
+                                        .font(.title2.bold())
+                                    Button { startEditing() } label: {
+                                        Image(systemName: "pencil.circle")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                    if state.isReviewing {
+                                        Button {
+                                            dismiss()
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                state.startSearch(for: clusterId)
+                                            }
+                                        } label: {
+                                            Image(systemName: "magnifyingglass.circle")
+                                                .foregroundStyle(.blue)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("以圖搜人")
+                                    }
                                 }
-                                .buttonStyle(.plain)
                             }
+                            Text("\(cluster.imagePaths.count) 張圖片")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        Text("\(cluster.imagePaths.count) 張圖片")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
+                        Spacer()
 
-                    Text("雙擊放大 · hover 顯示移除")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        Text("雙擊放大 · hover 顯示移除")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
 
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding()
-                .background(.bar)
-
-                Divider()
-
-                // 圖片網格
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 8) {
-                        ForEach(cluster.imagePaths, id: \.self) { path in
-                            ImageCell(
-                                path: path,
-                                isHovered: hoveredPath == path,
-                                onDoubleClick: { zoomedImagePath = path },
-                                onRemove: { onRemoveImage(path) }
-                            )
-                            .onHover { hovering in hoveredPath = hovering ? path : nil }
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
                         }
+                        .buttonStyle(.plain)
                     }
                     .padding()
+                    .background(.bar)
+
+                    Divider()
+
+                    // 圖片網格
+                    ScrollView {
+                        LazyVGrid(columns: columns, spacing: 8) {
+                            ForEach(cluster.imagePaths, id: \.self) { path in
+                                ImageCell(
+                                    path: path,
+                                    isHovered: hoveredPath == path,
+                                    onDoubleClick: { zoomedImagePath = path },
+                                    onRemove: { state.removeImage(path, fromCluster: clusterId) }
+                                )
+                                .onHover { hovering in hoveredPath = hovering ? path : nil }
+                            }
+                        }
+                        .padding()
+                    }
                 }
             }
 
@@ -338,11 +361,14 @@ struct PersonDetailView: View {
                 }
             }
         }
-        .onAppear { editedName = cluster.name }
+        .onAppear { editedName = cluster?.name ?? "" }
+        .onChange(of: cluster == nil) { isEmpty in
+            if isEmpty { dismiss() }
+        }
     }
 
     private func startEditing() {
-        editedName = cluster.name
+        editedName = cluster?.name ?? ""
         isEditingName = true
     }
 }

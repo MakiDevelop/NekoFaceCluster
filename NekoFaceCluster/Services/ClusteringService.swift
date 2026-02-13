@@ -28,9 +28,18 @@ actor ClusteringService {
         let errorCount: Int
     }
 
+    struct ProgressInfo: Sendable {
+        let processed: Int
+        let total: Int
+        let file: String
+        let totalFaces: Int
+        let noFaceCount: Int
+        let errorCount: Int
+    }
+
     func process(
         imageURLs: [URL],
-        onProgress: @Sendable @MainActor (Int, Int, String) -> Void
+        onProgress: @Sendable @MainActor (ProgressInfo) -> Void
     ) async throws -> ProcessResult {
         var allRecords: [FaceRecord] = []
         var noFaceCount = 0
@@ -39,10 +48,13 @@ actor ClusteringService {
 
         for (index, url) in imageURLs.enumerated() {
             let fileName = url.lastPathComponent
-            await onProgress(index + 1, total, fileName)
 
             guard let cgImage = ImageScanner.loadCGImage(from: url) else {
                 errorCount += 1
+                await onProgress(ProgressInfo(
+                    processed: index + 1, total: total, file: fileName,
+                    totalFaces: allRecords.count, noFaceCount: noFaceCount, errorCount: errorCount
+                ))
                 continue
             }
 
@@ -54,6 +66,11 @@ actor ClusteringService {
             } catch {
                 errorCount += 1
             }
+
+            await onProgress(ProgressInfo(
+                processed: index + 1, total: total, file: fileName,
+                totalFaces: allRecords.count, noFaceCount: noFaceCount, errorCount: errorCount
+            ))
         }
 
         guard !allRecords.isEmpty else {

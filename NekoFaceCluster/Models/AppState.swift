@@ -43,11 +43,26 @@ class AppState: ObservableObject {
     @Published var minSamples: Int = 2
     @Published var fileMode: FileMode = .move
 
+    // MARK: - SearXNG 圖搜
+
+    @Published var searxngBaseURL: String {
+        didSet { UserDefaults.standard.set(searxngBaseURL, forKey: "searxngBaseURL") }
+    }
+    @Published var searchingClusterId: Int?
+    @Published var isSearching: Bool = false
+    @Published var searchResults: [SearchResult] = []
+    @Published var searchError: String?
+
     enum FileMode: String, CaseIterable, Identifiable {
         case move = "移動"
         case copy = "複製"
         case symlink = "Symlink"
         var id: String { rawValue }
+    }
+
+    init() {
+        self.searxngBaseURL = UserDefaults.standard.string(forKey: "searxngBaseURL")
+            ?? "https://erika.n1k.tw/searxng"
     }
 
     var isProcessing: Bool {
@@ -83,6 +98,42 @@ class AppState: ObservableObject {
             noisePaths.append(contentsOf: clusters[index].imagePaths)
             clusters.remove(at: index)
         }
+    }
+
+    // MARK: - 圖搜操作
+
+    func startSearch(for clusterId: Int) {
+        guard let cluster = clusters.first(where: { $0.id == clusterId }),
+              let imagePath = cluster.thumbnailPath else { return }
+        searchingClusterId = clusterId
+        isSearching = true
+        searchResults = []
+        searchError = nil
+
+        Task {
+            let service = SearXNGService()
+            do {
+                let results = try await service.search(imagePath: imagePath, baseURL: searxngBaseURL)
+                isSearching = false
+                searchResults = results
+                if results.isEmpty { searchError = "沒有找到結果" }
+            } catch {
+                isSearching = false
+                searchError = error.localizedDescription
+            }
+        }
+    }
+
+    func applySearchName(_ name: String, toCluster clusterId: Int) {
+        renameCluster(id: clusterId, to: name)
+        dismissSearch()
+    }
+
+    func dismissSearch() {
+        searchingClusterId = nil
+        isSearching = false
+        searchResults = []
+        searchError = nil
     }
 
     func reset() {

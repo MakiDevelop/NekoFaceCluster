@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		20D67A8B2F3EE01600E24A24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20D67A892F3EDEE000E24A24 /* Assets.xcassets */; };
 		2482D0A9D549C465F426C62C /* w600k_r50.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */; };
 		3B9A76A9C168D2716E503515 /* VisionEmbedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D085252A455496572335192 /* VisionEmbedder.swift */; };
 		4F3669487319D120AFCF83E2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFC70F41E45D18234B54579 /* ContentView.swift */; };
@@ -26,6 +27,7 @@
 /* Begin PBXFileReference section */
 		0199A1508413F0CB1C7E2250 /* NekoFaceCluster.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NekoFaceCluster.entitlements; sourceTree = "<group>"; };
 		1BFC70F41E45D18234B54579 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		20D67A892F3EDEE000E24A24 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		373E3D8C5A696825E1B0D8A2 /* FileOrganizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOrganizer.swift; sourceTree = "<group>"; };
 		3BAA995F48EFAAA713A1E602 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		6825467B6FB8BD8D1C7E216E /* ClusteringService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusteringService.swift; sourceTree = "<group>"; };
@@ -35,7 +37,7 @@
 		89AFB01A5CE57C490D20156E /* ClusterGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterGalleryView.swift; sourceTree = "<group>"; };
 		97CEC855BAF187C6AC429039 /* DBSCAN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBSCAN.swift; sourceTree = "<group>"; };
 		ABBE1A609E5BD1B57A622552 /* ProcessingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessingView.swift; sourceTree = "<group>"; };
-		B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */ = {isa = PBXFileReference; path = w600k_r50.mlpackage; sourceTree = "<group>"; };
+		B186A2A44A35DCD8D0C7FEF0 /* w600k_r50.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = w600k_r50.mlpackage; sourceTree = "<group>"; };
 		B404028449B64DAF7A2D5628 /* ImageScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageScanner.swift; sourceTree = "<group>"; };
 		B977F71C5B0E97F14F61DE5F /* NekoFaceClusterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NekoFaceClusterApp.swift; sourceTree = "<group>"; };
 		BB269576D66C2A350BA0F1E3 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 		B3089537C03CBAC604EC2BD3 = {
 			isa = PBXGroup;
 			children = (
+				20D67A892F3EDEE000E24A24 /* Assets.xcassets */,
 				68F7E69AF6BFB35CC935D104 /* NekoFaceCluster */,
 				08260F14885C046D9A01EB1A /* Products */,
 			);
@@ -113,6 +116,7 @@
 			buildConfigurationList = F47CA956B08E529CDBB7C0F3 /* Build configuration list for PBXNativeTarget "NekoFaceCluster" */;
 			buildPhases = (
 				5593910753DA410439C67A88 /* Sources */,
+				20D67A8A2F3EE00100E24A24 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -144,7 +148,6 @@
 			);
 			mainGroup = B3089537C03CBAC604EC2BD3;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -152,6 +155,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		20D67A8A2F3EE00100E24A24 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20D67A8B2F3EE01600E24A24 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		5593910753DA410439C67A88 /* Sources */ = {
