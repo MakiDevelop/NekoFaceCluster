@@ -121,6 +121,7 @@ actor ReverseImageSearchService {
         var request = URLRequest(url: uploadURL)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("NekoFaceCluster/1.0", forHTTPHeaderField: "User-Agent")
 
         var body = Data()
         // reqtype
