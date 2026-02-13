@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-/// SearXNG 搜尋結果
+/// 搜尋結果
 struct SearchResult: Identifiable, Sendable {
     let id = UUID()
     let title: String
@@ -10,8 +10,8 @@ struct SearchResult: Identifiable, Sendable {
     let engine: String
 }
 
-/// SearXNG 反向圖搜服務
-actor SearXNGService {
+/// 反向圖搜服務（Yandex 瀏覽器開啟 + SearXNG TinEye 備用）
+actor ReverseImageSearchService {
 
     private let session: URLSession
 
@@ -23,18 +23,18 @@ actor SearXNGService {
     }
 
     enum SearchError: LocalizedError {
-        case invalidURL
         case imageLoadFailed
         case encodingFailed
+        case uploadFailed(String)
         case networkError(String)
         case serverError(Int)
         case decodingFailed
 
         var errorDescription: String? {
             switch self {
-            case .invalidURL: return "SearXNG URL 格式不正確"
             case .imageLoadFailed: return "無法載入圖片"
             case .encodingFailed: return "圖片編碼失敗"
+            case .uploadFailed(let m): return "圖片上傳失敗：\(m)"
             case .networkError(let m): return "網路錯誤：\(m)"
             case .serverError(let code): return "伺服器錯誤 \(code)"
             case .decodingFailed: return "回應解析失敗"
@@ -42,18 +42,31 @@ actor SearXNGService {
         }
     }
 
-    /// 用本地圖片執行反向圖搜
-    func search(imagePath: String, baseURL: String) async throws -> [SearchResult] {
-        // 1. 載入 + 縮圖
+    /// 上傳圖片到 0x0.st 取得臨時 URL，再開瀏覽器 Yandex 搜
+    func openInBrowser(imagePath: String) async throws -> URL {
+        let jpegData = try loadAndResize(path: imagePath, maxDimension: 500)
+
+        // 上傳到 0x0.st
+        let imageURL = try await uploadToTemp(jpegData: jpegData)
+
+        // 組 Yandex 反向圖搜 URL
+        let encoded = imageURL.absoluteString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? imageURL.absoluteString
+        guard let searchURL = URL(string: "https://yandex.com/images/search?rpt=imageview&url=\(encoded)") else {
+            throw SearchError.uploadFailed("無法組成搜尋 URL")
+        }
+
+        return searchURL
+    }
+
+    /// SearXNG TinEye 搜尋（備用）
+    func searchViaSearXNG(imagePath: String, baseURL: String) async throws -> [SearchResult] {
         let jpegData = try loadAndResize(path: imagePath, maxDimension: 300)
 
-        // 2. Base64 data URI
         let b64 = jpegData.base64EncodedString()
         let dataURI = "data:image/jpeg;base64,\(b64)"
 
-        // 3. 建立 POST 請求
         guard let url = URL(string: "\(baseURL)/search") else {
-            throw SearchError.invalidURL
+            throw SearchError.networkError("SearXNG URL 格式不正確")
         }
 
         var request = URLRequest(url: url)
@@ -68,7 +81,6 @@ actor SearXNGService {
         ]
         request.httpBody = components.percentEncodedQuery?.data(using: .utf8)
 
-        // 4. 發送
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await session.data(for: request)
@@ -81,7 +93,6 @@ actor SearXNGService {
             throw SearchError.serverError(httpResponse.statusCode)
         }
 
-        // 5. 解析 JSON
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let results = json["results"] as? [[String: Any]] else {
             throw SearchError.decodingFailed
@@ -99,6 +110,46 @@ actor SearXNGService {
         }
     }
 
+    // MARK: - 圖片上傳
+
+    private func uploadToTemp(jpegData: Data) async throws -> URL {
+        guard let uploadURL = URL(string: "https://0x0.st") else {
+            throw SearchError.uploadFailed("無效的上傳 URL")
+        }
+
+        let boundary = UUID().uuidString
+        var request = URLRequest(url: uploadURL)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"face.jpg\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+        body.append(jpegData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw SearchError.uploadFailed(error.localizedDescription)
+        }
+
+        if let httpResponse = response as? HTTPURLResponse,
+           !(200...299).contains(httpResponse.statusCode) {
+            throw SearchError.uploadFailed("HTTP \(httpResponse.statusCode)")
+        }
+
+        guard let urlString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let imageURL = URL(string: urlString) else {
+            throw SearchError.uploadFailed("回應格式錯誤")
+        }
+
+        return imageURL
+    }
+
     // MARK: - 圖片處理
 
     private func loadAndResize(path: String, maxDimension: CGFloat) throws -> Data {
@@ -111,21 +162,18 @@ actor SearXNGService {
             throw SearchError.imageLoadFailed
         }
 
-        // 計算縮放尺寸
         let scale = min(maxDimension / originalSize.width, maxDimension / originalSize.height, 1.0)
         let newSize = NSSize(
             width: round(originalSize.width * scale),
             height: round(originalSize.height * scale)
         )
 
-        // 繪製縮圖
         let resized = NSImage(size: newSize)
         resized.lockFocus()
         NSGraphicsContext.current?.imageInterpolation = .high
         nsImage.draw(in: NSRect(origin: .zero, size: newSize))
         resized.unlockFocus()
 
-        // 轉 JPEG
         guard let tiff = resized.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff),
               let jpeg = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else {

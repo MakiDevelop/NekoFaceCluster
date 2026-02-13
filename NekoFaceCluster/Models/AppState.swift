@@ -102,7 +102,29 @@ class AppState: ObservableObject {
 
     // MARK: - 圖搜操作
 
-    func startSearch(for clusterId: Int) {
+    /// 開瀏覽器 Yandex 反向搜圖（辨人臉主力）
+    func openBrowserSearch(for clusterId: Int) {
+        guard let cluster = clusters.first(where: { $0.id == clusterId }),
+              let imagePath = cluster.thumbnailPath else { return }
+        searchingClusterId = clusterId
+        isSearching = true
+        searchError = nil
+
+        Task {
+            let service = ReverseImageSearchService()
+            do {
+                let searchURL = try await service.openInBrowser(imagePath: imagePath)
+                isSearching = false
+                NSWorkspace.shared.open(searchURL)
+            } catch {
+                isSearching = false
+                searchError = error.localizedDescription
+            }
+        }
+    }
+
+    /// SearXNG TinEye 搜尋（備用，找相同圖片來源）
+    func startTinEyeSearch(for clusterId: Int) {
         guard let cluster = clusters.first(where: { $0.id == clusterId }),
               let imagePath = cluster.thumbnailPath else { return }
         searchingClusterId = clusterId
@@ -111,9 +133,9 @@ class AppState: ObservableObject {
         searchError = nil
 
         Task {
-            let service = SearXNGService()
+            let service = ReverseImageSearchService()
             do {
-                let results = try await service.search(imagePath: imagePath, baseURL: searxngBaseURL)
+                let results = try await service.searchViaSearXNG(imagePath: imagePath, baseURL: searxngBaseURL)
                 isSearching = false
                 searchResults = results
                 if results.isEmpty { searchError = "沒有找到結果" }

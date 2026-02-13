@@ -35,7 +35,7 @@ struct ClusterGalleryView: View {
                         onDoubleTap: { startEditing(cluster) },
                         onCommitName: { commitName(for: cluster.id) },
                         onRemoveCluster: { state.removeCluster(id: cluster.id) },
-                        onSearch: { state.startSearch(for: cluster.id) }
+                        onSearch: { state.openBrowserSearch(for: cluster.id) }
                     )
                     .zIndex(hoveredId == cluster.id ? 1 : 0)
                     .onHover { hovering in hoveredId = hovering ? cluster.id : nil }
@@ -302,7 +302,7 @@ struct PersonDetailView: View {
                                         Button {
                                             dismiss()
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                state.startSearch(for: clusterId)
+                                                state.openBrowserSearch(for: clusterId)
                                             }
                                         } label: {
                                             Image(systemName: "magnifyingglass.circle")
