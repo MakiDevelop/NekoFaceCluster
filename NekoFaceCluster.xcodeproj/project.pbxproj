@@ -22,6 +22,8 @@
 		E389C4A3230C43449A630E2A /* DBSCAN.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97CEC855BAF187C6AC429039 /* DBSCAN.swift */; };
 		F9945D4CD9291D63C45E29C4 /* CoreMLFaceEmbedder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDCD6C9E275B3D9DE7416120 /* CoreMLFaceEmbedder.swift */; };
 		FC8A01C2C871F7A8D25BA1F8 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA995F48EFAAA713A1E602 /* WelcomeView.swift */; };
+		AA11BB22CC33DD44EE55FF66 /* SearXNGService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* SearXNGService.swift */; };
+		CC33DD44EE55FF6600112233 /* SearchResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC33DD44EE55FF6600112234 /* SearchResultsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +44,8 @@
 		B977F71C5B0E97F14F61DE5F /* NekoFaceClusterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NekoFaceClusterApp.swift; sourceTree = "<group>"; };
 		BB269576D66C2A350BA0F1E3 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		FDCD6C9E275B3D9DE7416120 /* CoreMLFaceEmbedder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMLFaceEmbedder.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF67 /* SearXNGService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearXNGService.swift; sourceTree = "<group>"; };
+		CC33DD44EE55FF6600112234 /* SearchResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -60,6 +64,7 @@
 				1BFC70F41E45D18234B54579 /* ContentView.swift */,
 				ABBE1A609E5BD1B57A622552 /* ProcessingView.swift */,
 				3BAA995F48EFAAA713A1E602 /* WelcomeView.swift */,
+				CC33DD44EE55FF6600112234 /* SearchResultsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -104,6 +109,7 @@
 				6825467B6FB8BD8D1C7E216E /* ClusteringService.swift */,
 				373E3D8C5A696825E1B0D8A2 /* FileOrganizer.swift */,
 				B404028449B64DAF7A2D5628 /* ImageScanner.swift */,
+				AA11BB22CC33DD44EE55FF67 /* SearXNGService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -186,6 +192,8 @@
 				3B9A76A9C168D2716E503515 /* VisionEmbedder.swift in Sources */,
 				FC8A01C2C871F7A8D25BA1F8 /* WelcomeView.swift in Sources */,
 				2482D0A9D549C465F426C62C /* w600k_r50.mlpackage in Sources */,
+				AA11BB22CC33DD44EE55FF66 /* SearXNGService.swift in Sources */,
+				CC33DD44EE55FF6600112233 /* SearchResultsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
