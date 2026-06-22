@@ -168,6 +168,19 @@ struct SidebarView: View {
                     .disabled(state.inputDirectory == nil || state.outputDirectory == nil || state.isProcessing)
                 }
 
+                if state.isProcessing {
+                    Button(action: cancelProcessing) {
+                        HStack {
+                            Image(systemName: "xmark.circle.fill")
+                            Text("取消處理")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .tint(.red)
+                }
+
                 // 錯誤訊息
                 if state.phase == .error, !state.statusMessage.isEmpty {
                     Label(state.statusMessage, systemImage: "exclamationmark.triangle.fill")
@@ -213,8 +226,11 @@ struct SidebarView: View {
         state.inputDirectory = inputDir
         state.outputDirectory = outputDir
 
-        Task { @MainActor in
+        let task = Task { @MainActor in
             do {
+                // Check early
+                try Task.checkCancellation()
+
                 state.phase = .scanning
                 let imageURLs = ImageScanner.scan(directory: inputDir)
                 state.totalImages = imageURLs.count
@@ -232,6 +248,7 @@ struct SidebarView: View {
                 )
 
                 let result = try await service.process(imageURLs: imageURLs) { info in
+                    // The progress closure is called from within possibly cancelled task; guard inside service too
                     state.processedImages = info.processed
                     state.progress = Double(info.processed) / Double(info.total)
                     state.currentFile = info.file
@@ -239,6 +256,9 @@ struct SidebarView: View {
                     state.noFaceImages = info.noFaceCount
                     state.errorImages = info.errorCount
                 }
+
+                // If cancelled during await, the result may be partial but we still check
+                try Task.checkCancellation()
 
                 state.clusters = result.clusters
                 state.noisePaths = result.noisePaths
@@ -250,11 +270,20 @@ struct SidebarView: View {
                 state.phase = .reviewing
                 state.statusMessage = "分群完成，請審核後點「確認整理」"
 
+            } catch is CancellationError {
+                state.phase = .error
+                state.statusMessage = "處理已取消"
             } catch {
                 state.phase = .error
                 state.statusMessage = error.localizedDescription
             }
+            state.setProcessingTask(nil)
         }
+        state.setProcessingTask(task)
+    }
+
+    private func cancelProcessing() {
+        state.cancelProcessing()
     }
 
     /// 用戶確認後才搬檔案

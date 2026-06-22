@@ -53,6 +53,23 @@ class AppState: ObservableObject {
     @Published var searchResults: [SearchResult] = []
     @Published var searchError: String?
 
+    // Task handle for long-running processing (cancel support)
+    private var _processingTask: Task<Void, Never>?
+
+    func setProcessingTask(_ task: Task<Void, Never>?) {
+        _processingTask?.cancel()
+        _processingTask = task
+    }
+
+    func cancelProcessing() {
+        _processingTask?.cancel()
+        _processingTask = nil
+        if isProcessing {
+            phase = .error
+            statusMessage = "處理已取消"
+        }
+    }
+
     enum FileMode: String, CaseIterable, Identifiable {
         case move = "移動"
         case copy = "複製"

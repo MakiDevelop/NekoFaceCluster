@@ -54,6 +54,12 @@ struct ProcessingView: View {
             }
 
             Spacer()
+
+            Button("取消處理", role: .cancel) {
+                state.cancelProcessing()
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
