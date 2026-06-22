@@ -1,23 +1,26 @@
 import Foundation
 import AppKit
 
-/// 遞迴掃描目錄中的圖片檔案
+/// 遞迴掃描目錄中的圖片檔案（含子資料夾）
 struct ImageScanner {
     static let supportedExtensions: Set<String> = [
         "jpg", "jpeg", "png", "heic", "webp", "bmp", "tiff"
     ]
 
     static func scan(directory: URL) -> [URL] {
-        let fm = FileManager.default
-        guard let contents = try? fm.contentsOfDirectory(
+        var results: [URL] = []
+        guard let enumerator = FileManager.default.enumerator(
             at: directory,
             includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles]
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
         ) else { return [] }
 
-        return contents
-            .filter { supportedExtensions.contains($0.pathExtension.lowercased()) }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        for case let fileURL as URL in enumerator {
+            if supportedExtensions.contains(fileURL.pathExtension.lowercased()) {
+                results.append(fileURL)
+            }
+        }
+        return results.sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     static func loadCGImage(from url: URL) -> CGImage? {

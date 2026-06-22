@@ -41,36 +41,53 @@ actor ClusteringService {
         imageURLs: [URL],
         onProgress: @Sendable @MainActor (ProgressInfo) -> Void
     ) async throws -> ProcessResult {
+        if Task.isCancelled {
+            return ProcessResult(clusters: [], noisePaths: [], totalFaces: 0, noFaceCount: 0, errorCount: 0)
+        }
+
         var allRecords: [FaceRecord] = []
         var noFaceCount = 0
         var errorCount = 0
         let total = imageURLs.count
+        var completed = 0
 
-        for (index, url) in imageURLs.enumerated() {
-            let fileName = url.lastPathComponent
+        // Capture Sendable embedder under actor isolation before launching concurrent children.
+        let embedder = self.embedder
 
-            guard let cgImage = ImageScanner.loadCGImage(from: url) else {
-                errorCount += 1
+        // Parallel embedding: images are independent. Use TaskGroup for concurrency.
+        await withTaskGroup(of: (records: [FaceRecord], noFace: Int, error: Int, fileName: String).self) { group in
+            for url in imageURLs {
+                let fileName = url.lastPathComponent
+                group.addTask {
+                    guard let cgImage = ImageScanner.loadCGImage(from: url) else {
+                        return ([], 0, 1, fileName)
+                    }
+                    do {
+                        let records = try await embedder.detectAndEmbed(cgImage, sourcePath: url.path)
+                        return (records, 0, 0, fileName)
+                    } catch FaceEmbedderError.noFaces {
+                        return ([], 1, 0, fileName)
+                    } catch {
+                        return ([], 0, 1, fileName)
+                    }
+                }
+            }
+
+            for await item in group {
+                allRecords.append(contentsOf: item.records)
+                noFaceCount += item.noFace
+                errorCount += item.error
+                completed += 1
+
                 await onProgress(ProgressInfo(
-                    processed: index + 1, total: total, file: fileName,
-                    totalFaces: allRecords.count, noFaceCount: noFaceCount, errorCount: errorCount
+                    processed: completed,
+                    total: total,
+                    file: item.fileName,
+                    totalFaces: allRecords.count,
+                    noFaceCount: noFaceCount,
+                    errorCount: errorCount
                 ))
-                continue
             }
-
-            do {
-                let records = try await embedder.detectAndEmbed(cgImage, sourcePath: url.path)
-                allRecords.append(contentsOf: records)
-            } catch FaceEmbedderError.noFaces {
-                noFaceCount += 1
-            } catch {
-                errorCount += 1
-            }
-
-            await onProgress(ProgressInfo(
-                processed: index + 1, total: total, file: fileName,
-                totalFaces: allRecords.count, noFaceCount: noFaceCount, errorCount: errorCount
-            ))
         }
 
         guard !allRecords.isEmpty else {
